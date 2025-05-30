@@ -4,17 +4,20 @@ export default function Home() {
   const [apiStatus, setApiStatus] = useState('Checking...')
 
   useEffect(() => {
-    fetch('/api/health')
+    fetch('https://api.worldbuilder.app/health')
       .then(res => res.json())
-      .then(data => setApiStatus(data.status || 'Connected'))
-      .catch(err => setApiStatus('Offline'))
+      .then(data => setApiStatus(data.status === 'healthy' ? 'Online' : 'Connected'))
+      .catch(err => {
+        console.error('API error:', err);
+        setApiStatus('Offline')
+      })
   }, [])
 
   return (
     <div className="container">
       <h1>World Builder</h1>
       <p>D&D Session Management Platform</p>
-      <p>API Status: <span className={apiStatus === 'healthy' ? 'status-ok' : 'status-error'}>{apiStatus}</span></p>
+      <p>API Status: <span className={apiStatus === 'Online' || apiStatus === 'Connected' ? 'status-ok' : 'status-error'}>{apiStatus}</span></p>
       
       <div className="links">
         <a href="/campaigns">My Campaigns</a>

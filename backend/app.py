@@ -1,114 +1,57 @@
-# Create auth.py in the backend/api directory
-
-from flask import Blueprint, request, jsonify, redirect, session
-import requests
+from flask import Flask, jsonify, session
+from flask_cors import CORS
 import os
-from datetime import datetime
-import secrets
+from datetime import timedelta
+import sys
 
-bp = Blueprint('auth', __name__)
+# Fix the path more explicitly for Docker
+if '/app' not in sys.path:
+    sys.path.insert(0, '/app')
 
-DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
-DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
-DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI', 'https://worldbuilder.app/auth/discord/callback')
-DISCORD_API_BASE = 'https://discord.com/api/v10'
+app = Flask(__name__)
 
-@bp.route('/discord')
-def discord_login():
-    """Redirect to Discord OAuth"""
-    state = secrets.token_urlsafe(16)
-    session['oauth_state'] = state
-    
-    params = {
-        'client_id': DISCORD_CLIENT_ID,
-        'redirect_uri': DISCORD_REDIRECT_URI,
-        'response_type': 'code',
-        'scope': 'identify email',
-        'state': state
-    }
-    
-    discord_auth_url = f"https://discord.com/api/oauth2/authorize?" + "&".join([f"{k}={v}" for k, v in params.items()])
-    return redirect(discord_auth_url)
+# Configure app
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-@bp.route('/discord/callback')
-def discord_callback():
-    """Handle Discord OAuth callback"""
-    code = request.args.get('code')
-    state = request.args.get('state')
-    
-    # Verify state
-    if state != session.get('oauth_state'):
-        return jsonify({'error': 'Invalid state parameter'}), 400
-    
-    if not code:
-        return jsonify({'error': 'No code provided'}), 400
-    
-    # Exchange code for token
-    token_data = {
-        'client_id': DISCORD_CLIENT_ID,
-        'client_secret': DISCORD_CLIENT_SECRET,
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': DISCORD_REDIRECT_URI
-    }
-    
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-    
-    token_response = requests.post(
-        f"{DISCORD_API_BASE}/oauth2/token",
-        data=token_data,
-        headers=headers
-    )
-    
-    if token_response.status_code != 200:
-        return jsonify({'error': 'Failed to get token'}), 400
-    
-    tokens = token_response.json()
-    access_token = tokens['access_token']
-    
-    # Get user info
-    user_headers = {
-        'Authorization': f"Bearer {access_token}"
-    }
-    
-    user_response = requests.get(
-        f"{DISCORD_API_BASE}/users/@me",
-        headers=user_headers
-    )
-    
-    if user_response.status_code != 200:
-        return jsonify({'error': 'Failed to get user info'}), 400
-    
-    discord_user = user_response.json()
-    
-    # Here you would normally:
-    # 1. Check if user exists in database
-    # 2. Create user if not exists
-    # 3. Create session/JWT token
-    # 4. Redirect to frontend with token
-    
-    # For now, let's redirect with user info
-    frontend_url = os.getenv('PUBLIC_URL', 'https://worldbuilder.app')
-    
-    # In production, you'd create a JWT token here
-    # For now, we'll just redirect with success
-    return redirect(f"{frontend_url}/dashboard?login=success&user={discord_user['username']}")
+# Configure CORS
+CORS(app, 
+     origins=os.getenv('ALLOWED_ORIGINS', '*').split(','),
+     supports_credentials=True)
 
-@bp.route('/logout')
-def logout():
-    """Logout user"""
-    session.clear()
-    return jsonify({'message': 'Logged out successfully'})
+# Import and register blueprints with error handling
+try:
+    from api.auth import bp as auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    print("Auth blueprint registered successfully")
+except ImportError as e:
+    print(f"Warning: Could not import auth blueprint: {e}")
 
-@bp.route('/me')
-def get_current_user():
-    """Get current user info"""
-    # This would check JWT/session and return user info
-    # For now, return mock data
+@app.route('/health')
+def health():
     return jsonify({
-        'id': session.get('user_id'),
-        'username': session.get('username'),
-        'authenticated': 'user_id' in session
+        'status': 'healthy',
+        'environment': os.getenv('ENVIRONMENT', 'development'),
+        'version': '0.1.0'
     })
+
+@app.route('/')
+def index():
+    return jsonify({
+        'message': 'World Builder API',
+        'endpoints': {
+            'health': '/health',
+            'auth': {
+                'login': '/api/auth/discord',
+                'callback': '/api/auth/discord/callback',
+                'logout': '/api/auth/logout',
+                'me': '/api/auth/me'
+            }
+        }
+    })
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=os.getenv('ENVIRONMENT') == 'development')
