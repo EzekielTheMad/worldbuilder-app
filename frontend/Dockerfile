@@ -4,27 +4,23 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN ls -la  # Debug: show what's copied
-RUN ls -la app/  # Debug: show app directory
-RUN npm run build
 
-# Production stage  
+# Debug: Show what files we have before build
+RUN echo "=== Files before build ===" && ls -la
+
+# Run build and show what happens
+RUN npm run build || (echo "Build failed" && ls -la && exit 1)
+
+# Debug: Show what files exist after build
+RUN echo "=== Files after build ===" && ls -la
+RUN echo "=== Checking for .next directory ===" && ls -la .next || echo "No .next directory created!"
+
+# Production stage
 FROM node:18-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
+# For now, just copy everything to see what we have
+COPY --from=builder /app ./
 
 EXPOSE 3000
-
-ENV PORT=3000
-
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
