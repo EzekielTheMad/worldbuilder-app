@@ -1,36 +1,185 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Worldbuilder App - D&D Session Processing Platform
 
-## Getting Started
+A comprehensive platform for processing D&D session audio recordings into structured narrative summaries using AI. Designed for Dungeon Masters and players who want to preserve their campaign stories without the tedious work of manual note-taking.
 
-First, run the development server:
+## 🎯 Project Purpose
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Transform hours of D&D session recordings into polished, structured summaries that capture:
+- Session narratives (in-character events only)
+- Key story developments and consequences  
+- NPCs encountered and locations visited
+- Loot, discoveries, and character development
+- TL;DR highlights for quick reference
+
+**Target Market**: D&D community as a SaaS platform ($2-5 per session)
+
+## ✨ Key Features
+
+- **Audio Processing**: Upload MP3 recordings up to 4 hours (2GB max)
+- **AI-Powered Summarization**: Two-step process (audio → transcript → summary)
+- **Campaign Management**: Multi-campaign support with player-character mapping
+- **Discord Integration**: OAuth login with Discord accounts
+- **Multi-DM Support**: West Marches style campaign compatibility
+- **Session History**: Browse and search past session summaries
+
+## 🏗️ Architecture
+
+**Tech Stack:**
+- **Frontend/Backend**: Next.js 14 with TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js with Discord OAuth
+- **AI Processing**: Google Gemini 2.0 Flash API
+- **Process Management**: PM2
+
+**Infrastructure:**
+- **Development**: Windows PC with VS Code
+- **Production**: Raspberry Pi 4 8GB (192.168.86.50:3001)
+- **Domain**: worldbuilder.app → Pi routing
+- **Deployment**: Git-based manual deployment
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ and npm
+- PostgreSQL database
+- Discord application for OAuth
+- Google AI Studio API key
+
+### Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/EzekielTheMad/worldbuilder-app.git
+   cd worldbuilder-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment setup**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. **Database setup**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Run development server**
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Production Deployment (Pi)
+
+1. **Pull latest changes**
+   ```bash
+   cd /var/www/worldbuilder
+   git pull origin main
+   ```
+
+2. **Install dependencies and build**
+   ```bash
+   npm install --production
+   npm run build
+   ```
+
+3. **Restart application**
+   ```bash
+   pm2 restart worldbuilder
+   ```
+
+## 📊 Audio Processing Details
+
+**Two-Step Processing Approach:**
+1. **Audio → Transcript**: Complete session transcription via Gemini
+2. **Transcript → Summary**: Structured narrative generation
+
+**Validated Performance:**
+- ✅ 4-hour sessions: Complete coverage
+- ✅ Cost: ~$0.39 per 4-hour session
+- ✅ File size: Up to 309MB MP3 files
+- ✅ Uses Gemini Files API for large uploads
+
+**Why Two-Step vs Direct:**
+- Direct audio-to-summary only provided partial coverage
+- Transcript files enable debugging and reprocessing
+- More reliable results for long sessions
+
+## 🗂️ Project Structure
+
+```
+worldbuilder-app/
+├── docs/                   # Project documentation
+├── src/
+│   ├── app/               # Next.js app directory
+│   ├── components/        # React components
+│   ├── lib/              # Utility functions and configurations
+│   └── types/            # TypeScript type definitions
+├── prisma/               # Database schema and migrations
+├── public/               # Static assets
+└── transcripts/          # Generated transcript files (gitignored)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔒 Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See `.env.example` for complete configuration. Key variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `DATABASE_URL`: PostgreSQL connection string
+- `NEXTAUTH_SECRET`: NextAuth.js secret key
+- `DISCORD_CLIENT_ID/SECRET`: Discord OAuth credentials
+- `GEMINI_API_KEY`: Google AI Studio API key
+- `TRANSCRIPT_DIR`: Local transcript storage path
 
-## Learn More
+## 📈 Development Roadmap
 
-To learn more about Next.js, take a look at the following resources:
+**Phase 1: Foundation (Current)**
+- [x] Project setup and documentation
+- [ ] NextAuth.js Discord integration
+- [ ] Database schema with Prisma
+- [ ] Basic UI components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Phase 2: Core Features**
+- [ ] Campaign management interface
+- [ ] Audio upload component
+- [ ] Processing pipeline integration
+- [ ] Session results display
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Phase 3: Enhancement**
+- [ ] User dashboard and history
+- [ ] Advanced summary customization
+- [ ] Multi-DM campaign support
+- [ ] Performance optimization
 
-## Deploy on Vercel
+## 🤝 Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is currently in active development. For questions or contributions:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Check existing documentation in `/docs`
+2. Review current issues and roadmap
+3. Follow the established code style and patterns
+4. Test thoroughly on development environment before PR
+
+## 📝 License
+
+[Add your license choice here]
+
+## 🆘 Support
+
+For technical issues or questions:
+- Check the `/docs` directory for detailed guides
+- Review environment setup in `SETUP.md`
+- Validate requirements in `REQUIREMENTS.md`
+
+---
+
+**Last Updated**: June 2025  
+**Status**: Active Development - Foundation Phase
