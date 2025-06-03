@@ -10,6 +10,9 @@ import { UserMenu } from '@/components/auth/UserMenu'
 import { CampaignCard } from '@/components/campaign/CampaignCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Alert, AlertDescription } from '@/components/ui/Alert'
+import '@/styles/globals.css'  // or the correct path to your CSS
+
+
 
 /**
  * Dashboard page showing user's campaigns and recent activity
