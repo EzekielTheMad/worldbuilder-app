@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// NEXTAUTH.JS REQUIRED MODELS
+// These models are required by NextAuth.js with Prisma adapter
+// =============================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// =============================================================================
+// WORLDBUILDER APPLICATION MODELS
+// =============================================================================
+
+model User {
+  // NextAuth.js required fields
+  id            String    @id @default(cuid())
+  name          String?   // Not used - we use username instead
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Worldbuilder-specific fields
+  discordId String  @unique
+  username  String
+  createdAt DateTime @default(now())
+  lastLogin DateTime @default(now())
+
+  // User settings and preferences
+  settings Json @default("{\"emailNotifications\": true, \"discordNotifications\": true}")
+
+  // NextAuth.js relationships
+  accounts Account[]
+  sessions Session[]
+
+  // Worldbuilder relationships
+  ownedCampaigns    Campaign[] @relation("CampaignOwner")
+  campaignMemberships CampaignMember[]
+  uploadedSessions  GameSession[] @relation("SessionUploader")
+
+  @@map("users")
+}
+
+model Campaign {
+  id                     String   @id @default(cuid())
+  name                   String
+  description            String?  @db.Text
+  worldPrimer            String   @db.Text
+  settingNotes           String?  @db.Text
+  
+  // Player-Character mapping stored as JSON
+  // Format: { "playerName": "characterName" }
+  playerCharacterMapping Json     @default("{}")
+  
+  isPublic               Boolean  @default(false)
+  inviteCode             String   @unique @default(cuid())
+  
+  // Ownership and timestamps
+  ownerId                String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relationships
+  owner    User             @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  CampaignMember[]
+  sessions GameSession[]
+
+  @@map("campaigns")
+}
+
+model CampaignMember {
+  id            String       @id @default(cuid())
+  campaignId    String
+  userId        String
+  characterName String?
+  role          CampaignRole @default(PLAYER)
+  joinedAt      DateTime     @default(now())
+
+  // Relationships
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ensure a user can only be a member of a campaign once
+  @@unique([campaignId, userId])
+  @@map("campaign_members")
+}
+
+model GameSession {
+  id          String   @id @default(cuid())
+  campaignId  String
+  uploadedBy  String
+  
+  // Session metadata
+  title       String?
+  notes       String?  @db.Text
+  
+  // File information
+  audioFilename     String
+  audioFileSize     BigInt
+  audioFileDuration Int? // Duration in seconds
+  transcriptPath    String?
+  
+  // Processing status and timing
+  status               ProcessingStatus @default(QUEUED)
+  processingStartedAt  DateTime?
+  processedAt          DateTime?
+  createdAt            DateTime         @default(now())
+  errorMessage         String?          @db.Text
+  
+  // Generated content (stored as JSON)
+  summaryJson Json?
+  
+  // Processing metadata for analytics and cost tracking
+  processingMetadata Json @default("{}")
+  
+  // Relationships
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  uploader User     @relation("SessionUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@map("game_sessions")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum CampaignRole {
+  OWNER
+  DM
+  PLAYER
+}
+
+enum ProcessingStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// =============================================================================
+// INDEXES FOR PERFORMANCE
+// =============================================================================
+
+// Add indexes for commonly queried fields
+// These will be added as the application grows and we identify slow queries
+
+// Example indexes (uncomment as needed):
+// @@index([createdAt], map: "sessions_created_at_idx") on GameSession
+// @@index([status], map: "sessions_status_idx") on GameSession
+// @@index([campaignId, createdAt], map: "sessions_campaign_created_idx") on GameSession
