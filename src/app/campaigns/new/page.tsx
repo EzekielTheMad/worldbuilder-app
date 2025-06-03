@@ -1,80 +1,65 @@
-/**
- * Campaign Creation Page
- * 
- * Allows users to create new D&D campaigns with basic information
- * and player-character mapping. All fields except name are optional.
- */
-
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AuthGuard } from '@/components/auth/AuthButton'
 import Link from 'next/link'
-
-interface PlayerCharacterMapping {
-  id: string
-  playerName: string
-  characterName: string
-}
+import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { Label } from '@/components/ui/Label'
+import { Textarea } from '@/components/ui/Textarea'
+import { Select } from '@/components/ui/Select'
+import { Alert, AlertDescription } from '@/components/ui/Alert'
+import { Badge } from '@/components/ui/Badge'
+import { Spinner } from '@/components/ui/Spinner'
 
 /**
- * Campaign creation form component
- * Handles campaign name, description, primer, and player-character mapping
+ * Campaign creation form page
+ * Allows users to create new campaigns with all settings
  */
 export default function NewCampaignPage() {
   const router = useRouter()
-  
-  // Form state
-  const [campaignName, setCampaignName] = useState('')
-  const [description, setDescription] = useState('')
-  const [worldPrimer, setWorldPrimer] = useState('')
-  const [settingNotes, setSettingNotes] = useState('')
-  
-  // Player-character mapping state (start with 5 slots)
-  const [playerMappings, setPlayerMappings] = useState<PlayerCharacterMapping[]>([
-    { id: '1', playerName: '', characterName: '' },
-    { id: '2', playerName: '', characterName: '' },
-    { id: '3', playerName: '', characterName: '' },
-    { id: '4', playerName: '', characterName: '' },
-    { id: '5', playerName: '', characterName: '' },
-  ])
-  
-  // Form submission state
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    setting: 'FANTASY_5E',
+    players: [{ name: '', character: '' }],
+  })
 
   /**
-   * Add a new player-character mapping slot (max 15)
+   * Add a new player/character slot
    */
-  const addPlayerSlot = () => {
-    if (playerMappings.length < 15) {
-      const newId = (playerMappings.length + 1).toString()
-      setPlayerMappings([
-        ...playerMappings,
-        { id: newId, playerName: '', characterName: '' }
-      ])
-    }
+  const addPlayer = () => {
+    setFormData(prev => ({
+      ...prev,
+      players: [...prev.players, { name: '', character: '' }]
+    }))
   }
 
   /**
-   * Remove a player-character mapping slot (min 1)
+   * Remove a player/character slot
    */
-  const removePlayerSlot = (id: string) => {
-    if (playerMappings.length > 1) {
-      setPlayerMappings(playerMappings.filter(mapping => mapping.id !== id))
-    }
+  const removePlayer = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      players: prev.players.filter((_, i) => i !== index)
+    }))
   }
 
   /**
-   * Update a specific player-character mapping
+   * Update player/character data
    */
-  const updatePlayerMapping = (id: string, field: 'playerName' | 'characterName', value: string) => {
-    setPlayerMappings(playerMappings.map(mapping => 
-      mapping.id === id 
-        ? { ...mapping, [field]: value }
-        : mapping
-    ))
+  const updatePlayer = (index: number, field: 'name' | 'character', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      players: prev.players.map((player, i) => 
+        i === index ? { ...player, [field]: value } : player
+      )
+    }))
   }
 
   /**
@@ -82,265 +67,246 @@ export default function NewCampaignPage() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
     setIsSubmitting(true)
-    setError('')
-
-    // Validate required fields
-    if (!campaignName.trim()) {
-      setError('Campaign name is required')
-      setIsSubmitting(false)
-      return
-    }
 
     try {
-      // Create player-character mapping object (only include non-empty mappings)
-      const playerCharacterMapping: Record<string, string> = {}
-      playerMappings.forEach(({ playerName, characterName }) => {
-        if (playerName.trim() && characterName.trim()) {
-          playerCharacterMapping[playerName.trim()] = characterName.trim()
-        }
-      })
-
-      // Prepare campaign data
-      const campaignData = {
-        name: campaignName.trim(),
-        description: description.trim() || null,
-        worldPrimer: worldPrimer.trim() || '',
-        settingNotes: settingNotes.trim() || null,
-        playerCharacterMapping,
-        isPublic: false // Default to private
-      }
-
-      // Submit to API
       const response = await fetch('/api/campaigns', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(campaignData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          players: formData.players.filter(p => p.name || p.character)
+        }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error?.message || 'Failed to create campaign')
+        throw new Error('Failed to create campaign')
       }
 
-      const { campaign } = await response.json()
-      
-      // Redirect to the new campaign or dashboard
+      const campaign = await response.json()
       router.push(`/campaigns/${campaign.id}`)
-      
     } catch (err) {
-      console.error('Error creating campaign:', err)
-      setError(err instanceof Error ? err.message : 'Failed to create campaign')
-    } finally {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
       setIsSubmitting(false)
     }
   }
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gradient-dark">
-        {/* Header */}
-        <header className="glass-card border-0 fantasy-border">
-          <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/dashboard"
-                className="text-secondary hover:text-accent-primary transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <h1 className="text-2xl font-bold text-gradient">Create New Campaign</h1>
-            </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border/50 backdrop-blur-sm">
+        <div className="container">
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/dashboard" className="flex items-center space-x-2">
+              <span className="font-display text-2xl text-primary-400">⚔️</span>
+              <span className="font-display text-xl">Worldbuilder</span>
+            </Link>
+            
+            <Button variant="ghost" asChild>
+              <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Main Content */}
-        <main className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <div className="glass-card rounded-lg">
-            <div className="p-6 sm:p-8">
-              {/* Error Message */}
-              {error && (
-                <div className="mb-6 p-4 status-error rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-sm font-medium">{error}</p>
-                  </div>
-                </div>
-              )}
+      {/* Main Content */}
+      <main className="container py-8 max-w-4xl">
+        <div className="mb-8 animate-fade-in">
+          <h1 className="heading-1 mb-2">Create New Campaign</h1>
+          <p className="text-text-secondary">
+            Set up your campaign details and add your players
+          </p>
+        </div>
 
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Basic Information */}
-                <div>
-                  <h2 className="text-lg font-semibold mb-4 text-gradient">Basic Information</h2>
-                  
-                  {/* Campaign Name - Required */}
-                  <div className="mb-6">
-                    <label htmlFor="campaignName" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                      Campaign Name <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="campaignName"
-                      value={campaignName}
-                      onChange={(e) => setCampaignName(e.target.value)}
-                      className="w-full px-3 py-2 input-field rounded-lg"
-                      placeholder="Enter campaign name (e.g., Curse of Strahd, Shades of Magic)"
-                      required
-                    />
-                  </div>
+        {error && (
+          <Alert variant="destructive" className="mb-6 animate-fade-in">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-                  {/* Description - Optional */}
-                  <div className="mb-6">
-                    <label htmlFor="description" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                      Description <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full px-3 py-2 input-field rounded-lg"
-                      placeholder="Brief description of your campaign"
-                    />
-                  </div>
-                </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <Card className="animate-slide-up">
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+              <CardDescription>
+                Give your campaign a name and description
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Campaign Name <span className="text-crimson">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  placeholder="The Lost Mines of Phandelver"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="magic-sparkle"
+                />
+              </div>
 
-                {/* World & Setting */}
-                <div>
-                  <h2 className="text-lg font-semibold mb-4 text-gradient">World & Setting</h2>
-                  
-                  {/* World Primer - Optional */}
-                  <div className="mb-6">
-                    <label htmlFor="worldPrimer" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                      World Primer <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
-                    </label>
-                    <textarea
-                      id="worldPrimer"
-                      value={worldPrimer}
-                      onChange={(e) => setWorldPrimer(e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 input-field rounded-lg"
-                      placeholder="Describe your campaign world, setting, tone, and key themes. This helps the AI understand your campaign's style when generating summaries."
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="setting">Campaign Setting</Label>
+                <Select
+                  id="setting"
+                  value={formData.setting}
+                  onChange={(e) => setFormData(prev => ({ ...prev, setting: e.target.value }))}
+                >
+                  <option value="FANTASY_5E">D&D 5th Edition</option>
+                  <option value="PATHFINDER">Pathfinder</option>
+                  <option value="CYBERPUNK">Cyberpunk</option>
+                  <option value="CUSTOM">Custom Setting</option>
+                </Select>
+              </div>
 
-                  {/* Setting Notes - Optional */}
-                  <div className="mb-6">
-                    <label htmlFor="settingNotes" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-                      Setting Notes <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
-                    </label>
-                    <textarea
-                      id="settingNotes"
-                      value={settingNotes}
-                      onChange={(e) => setSettingNotes(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 input-field rounded-lg"
-                      placeholder="Additional notes about rules, house rules, or special campaign elements."
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="A group of adventurers seeks fortune in the legendary Wave Echo Cave..."
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Player-Character Mapping */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gradient">
-                      Player-Character Mapping <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
-                    </h2>
-                    <button
+          {/* Players and Characters */}
+          <Card className="animate-slide-up animation-delay-100">
+            <CardHeader>
+              <CardTitle>Players & Characters</CardTitle>
+              <CardDescription>
+                Add your players and their character names for better transcription
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {formData.players.map((player, index) => (
+                  <div key={index} className="flex gap-4 items-start animate-fade-in">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor={`player-${index}`}>
+                        Player Name
+                      </Label>
+                      <Input
+                        id={`player-${index}`}
+                        placeholder="Victor"
+                        value={player.name}
+                        onChange={(e) => updatePlayer(index, 'name', e.target.value)}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor={`character-${index}`}>
+                        Character Name
+                      </Label>
+                      <Input
+                        id={`character-${index}`}
+                        placeholder="Voltee the Paladin"
+                        value={player.character}
+                        onChange={(e) => updatePlayer(index, 'character', e.target.value)}
+                      />
+                    </div>
+                    <Button
                       type="button"
-                      onClick={addPlayerSlot}
-                      disabled={playerMappings.length >= 15}
-                      className="btn-secondary inline-flex items-center gap-1 px-3 py-1 text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removePlayer(index)}
+                      className="mt-8"
+                      disabled={formData.players.length === 1}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Add Player
-                    </button>
+                      ❌
+                    </Button>
                   </div>
-                  
-                  <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Map your players to their character names. This helps the AI identify who did what in session summaries.
-                  </p>
+                ))}
 
-                  <div className="space-y-3">
-                    {playerMappings.map((mapping, index) => (
-                      <div key={mapping.id} className="flex items-center gap-3">
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            value={mapping.playerName}
-                            onChange={(e) => updatePlayerMapping(mapping.id, 'playerName', e.target.value)}
-                            className="px-3 py-2 input-field rounded-lg"
-                            placeholder={`Player ${index + 1} name`}
-                          />
-                          <input
-                            type="text"
-                            value={mapping.characterName}
-                            onChange={(e) => updatePlayerMapping(mapping.id, 'characterName', e.target.value)}
-                            className="px-3 py-2 input-field rounded-lg"
-                            placeholder="Character name"
-                          />
-                        </div>
-                        
-                        {playerMappings.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removePlayerSlot(mapping.id)}
-                            className="p-2 text-muted hover:text-red-400 transition-colors duration-200"
-                            title="Remove player slot"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={addPlayer}
+                  className="w-full"
+                >
+                  <span className="mr-2">➕</span>
+                  Add Another Player
+                </Button>
+              </div>
 
-                  {playerMappings.length >= 15 && (
-                    <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
-                      Maximum of 15 player slots reached.
+              <Alert className="mt-4">
+                <AlertDescription>
+                  <strong>Tip:</strong> Adding player and character names helps our AI 
+                  accurately identify speakers during transcription.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
+          {/* Advanced Settings */}
+          <Card className="animate-slide-up animation-delay-200">
+            <CardHeader>
+              <CardTitle>Advanced Settings</CardTitle>
+              <CardDescription>
+                Optional settings for your campaign
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                  <div>
+                    <h4 className="font-medium">Discord Integration</h4>
+                    <p className="text-sm text-text-secondary">
+                      Post session summaries to Discord
                     </p>
-                  )}
+                  </div>
+                  <Badge variant="warning">Coming Soon</Badge>
                 </div>
 
-                {/* Form Actions */}
-                <div className="flex items-center justify-between pt-6 fantasy-border">
-                  <Link
-                    href="/dashboard"
-                    className="btn-secondary px-4 py-2 rounded-lg"
-                  >
-                    Cancel
-                  </Link>
-                  
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !campaignName.trim()}
-                    className="btn-primary px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-4 h-4 loading-spinner rounded-full" />
-                        Creating...
-                      </>
-                    ) : (
-                      'Create Campaign'
-                    )}
-                  </button>
+                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                  <div>
+                    <h4 className="font-medium">Multi-DM Support</h4>
+                    <p className="text-sm text-text-secondary">
+                      Allow multiple DMs for this campaign
+                    </p>
+                  </div>
+                  <Badge variant="warning">Coming Soon</Badge>
                 </div>
-              </form>
-            </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Buttons */}
+          <div className="flex gap-4 justify-end animate-slide-up animation-delay-300">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push('/dashboard')}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isSubmitting || !formData.name}
+              magic
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Creating Campaign...
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">✨</span>
+                  Create Campaign
+                </>
+              )}
+            </Button>
           </div>
-        </main>
-      </div>
-    </AuthGuard>
+        </form>
+      </main>
+    </div>
   )
 }

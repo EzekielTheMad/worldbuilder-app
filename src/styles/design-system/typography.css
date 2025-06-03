@@ -1,0 +1,58 @@
+/**
+ * Typography system for Worldbuilder App
+ * Combines fantasy aesthetics with readability
+ */
+
+/* Display headings - for major sections */
+.heading-1 {
+  @apply font-display text-4xl md:text-5xl lg:text-6xl;
+  @apply tracking-tight leading-tight;
+  @apply bg-gradient-to-r from-primary-400 to-primary-600;
+  @apply bg-clip-text text-transparent;
+}
+
+.heading-2 {
+  @apply font-display text-3xl md:text-4xl;
+  @apply text-primary-300;
+}
+
+.heading-3 {
+  @apply font-display text-2xl md:text-3xl;
+  @apply text-primary-200;
+}
+
+/* Body text styles */
+.body-text {
+  @apply font-body text-base leading-relaxed;
+  @apply text-gray-200;
+}
+
+.body-small {
+  @apply font-body text-sm leading-relaxed;
+  @apply text-gray-300;
+}
+
+/* D&D specific text styles */
+.stat-text {
+  @apply font-mono text-sm uppercase tracking-wider;
+  @apply text-gold;
+}
+
+.damage-text {
+  @apply font-bold text-crimson;
+  @apply animate-pulse;
+}
+
+.spell-text {
+  @apply font-display italic;
+  @apply text-primary-400;
+}
+
+/* Narrative text for session summaries */
+.narrative-text {
+  @apply font-body text-lg leading-relaxed;
+  @apply text-gray-100;
+  @apply first-letter:text-4xl first-letter:font-display;
+  @apply first-letter:text-primary-400 first-letter:float-left;
+  @apply first-letter:mr-2 first-letter:leading-none;
+}

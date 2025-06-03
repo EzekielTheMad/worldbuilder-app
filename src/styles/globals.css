@@ -1,0 +1,148 @@
+/**
+ * Global styles for Worldbuilder App
+ * Imports all design system modules and sets base styles
+ */
+
+/* Import Tailwind base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import design system */
+@import './design-system/tokens.css';
+@import './design-system/typography.css';
+@import './design-system/animations.css';
+@import './design-system/utilities.css';
+@import './themes/dark-fantasy.css';
+
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+/* Base styles */
+@layer base {
+  /* Root element setup */
+  html {
+    @apply antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Body defaults */
+  body {
+    @apply bg-background text-text-primary;
+    @apply font-body;
+    @apply min-h-screen;
+  }
+
+  /* Heading defaults */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-medium;
+  }
+
+  /* Link defaults */
+  a {
+    @apply text-primary-400 hover:text-primary-300;
+    @apply transition-colors duration-200;
+  }
+
+  /* Form element resets */
+  input, textarea, select {
+    @apply bg-surface border-border;
+    @apply focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
+  }
+
+  /* Button resets */
+  button {
+    @apply transition-all duration-200;
+  }
+
+  /* Code blocks */
+  code {
+    @apply font-mono text-sm;
+    @apply bg-surface-elevated px-1 py-0.5 rounded;
+  }
+
+  pre {
+    @apply bg-surface-elevated p-4 rounded-lg overflow-x-auto;
+  }
+
+  pre code {
+    @apply bg-transparent p-0;
+  }
+}
+
+/* Component layer for complex components */
+@layer components {
+  /* Container utilities */
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-7xl;
+  }
+
+  /* Card component base */
+  .card {
+    @apply bg-surface rounded-lg border border-border;
+    @apply shadow-md;
+  }
+
+  /* Grid layouts */
+  .campaign-grid {
+    @apply grid gap-6;
+    @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* Session list */
+  .session-list {
+    @apply space-y-4;
+  }
+}
+
+/* Utility layer for custom utilities */
+@layer utilities {
+  /* Text balance for better readability */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Gradient borders */
+  .gradient-border {
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    background-image: linear-gradient(var(--color-surface), var(--color-surface)),
+                      linear-gradient(to right, var(--color-primary-600), var(--color-primary-400));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    @apply bg-white text-black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

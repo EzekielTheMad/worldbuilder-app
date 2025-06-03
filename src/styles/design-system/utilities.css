@@ -1,0 +1,124 @@
+/**
+ * Custom utility classes for D&D themed effects
+ * These provide unique visual elements for the fantasy theme
+ */
+
+/* Parchment/scroll effect for content containers */
+.parchment {
+  @apply bg-gradient-to-br from-amber-50/5 to-amber-100/5;
+  @apply border-2 border-amber-900/20;
+  @apply shadow-lg rounded-lg;
+  position: relative;
+  overflow: hidden;
+}
+
+.parchment::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    45deg, 
+    transparent 30%, 
+    rgba(180, 130, 70, 0.1) 50%, 
+    transparent 70%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Dice roll animation trigger */
+.dice-roll {
+  animation: roll 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Magic sparkle effect */
+.magic-sparkle {
+  position: relative;
+}
+
+.magic-sparkle::after {
+  content: '✨';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  animation: sparkle 2s infinite;
+  pointer-events: none;
+}
+
+/* Glowing border effect */
+.border-glow {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    45deg,
+    var(--color-primary-600),
+    var(--color-primary-400),
+    var(--color-primary-600)
+  );
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  z-index: -1;
+}
+
+.border-glow:hover::before {
+  opacity: 0.5;
+}
+
+/* Loading skeleton with shimmer */
+.skeleton {
+  @apply bg-surface-elevated rounded;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(26, 26, 26, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Magical gradient text */
+.text-gradient {
+  @apply bg-gradient-to-r from-primary-400 to-primary-600;
+  @apply bg-clip-text text-transparent;
+}
+
+/* Critical hit effect */
+.critical-hit {
+  @apply text-gold font-bold text-2xl;
+  animation: 
+    glow-pulse 0.5s ease-out,
+    slide-up 0.3s ease-out;
+}
+
+/* Session summary card effect */
+.session-card {
+  @apply bg-surface rounded-lg p-6;
+  @apply border border-border;
+  @apply transition-all duration-300;
+  @apply hover:border-primary-600/50;
+  @apply hover:shadow-lg hover:shadow-primary-600/10;
+  @apply hover:-translate-y-1;
+}
+
+/* Focus styles for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2;
+  @apply focus:ring-primary-500 focus:ring-offset-2;
+  @apply focus:ring-offset-background;
+}

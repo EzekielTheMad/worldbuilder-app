@@ -1,0 +1,78 @@
+/**
+ * Campaign card specific styles
+ * Complex animations and effects that can't be achieved with utilities alone
+ */
+
+/* Base card styles */
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow overlay effect */
+.glowOverlay {
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(168, 85, 247, 0.15),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover .glowOverlay {
+  opacity: 1;
+}
+
+/* Variant styles */
+.featured {
+  border-color: var(--color-primary-600);
+  background: linear-gradient(
+    135deg,
+    var(--color-surface) 0%,
+    var(--color-surface-elevated) 100%
+  );
+}
+
+.featured::before {
+  content: '⭐';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 10px var(--color-gold));
+}
+
+.minimal {
+  background: transparent;
+  border-style: dashed;
+  padding: 1rem;
+}
+
+/* Interactive mouse tracking (optional enhancement) */
+@media (hover: hover) {
+  .card {
+    cursor: pointer;
+  }
+  
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 80%,
+      rgba(168, 85, 247, 0.1) 100%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+  
+  .card:hover::after {
+    transform: translateX(0);
+  }
+}

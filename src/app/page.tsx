@@ -1,223 +1,201 @@
-/**
- * Dashboard Page Component
- * 
- * Main dashboard for authenticated users showing their campaigns,
- * recent sessions, and quick access to key features.
- */
-
-import { AuthGuard } from '@/components/auth/AuthButton'
-import { UserMenu } from '@/components/auth/AuthButton'
 import Link from 'next/link'
+import { getServerSession } from 'next-auth/next'
+import { redirect } from 'next/navigation'
+import { authOptions } from '@/lib/auth'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { SignInButton } from '@/components/auth/SignInButton'
 
 /**
- * Protected dashboard page - requires authentication
- * Shows user's campaigns, recent activity, and main navigation
+ * Landing page with hero section and features
+ * Redirects to dashboard if user is already authenticated
  */
-export default function DashboardPage() {
+export default async function LandingPage() {
+  const session = await getServerSession(authOptions)
+  
+  // Redirect authenticated users to dashboard
+  if (session) {
+    redirect('/dashboard')
+  }
+
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
-        {/* Dashboard Header */}
-        <header className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center">
-              {/* Logo and Navigation */}
-              <div className="flex items-center gap-8">
-                <Link href="/" className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                  </div>
-                  <span className="text-xl font-bold text-gray-900">Worldbuilder</span>
-                </Link>
-
-                {/* Navigation Menu */}
-                <nav className="hidden md:flex items-center gap-6">
-                  <Link 
-                    href="/dashboard" 
-                    className="text-indigo-600 font-medium border-b-2 border-indigo-600 pb-1"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    href="/campaigns" 
-                    className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200"
-                  >
-                    Campaigns
-                  </Link>
-                  <Link 
-                    href="/sessions" 
-                    className="text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200"
-                  >
-                    Sessions
-                  </Link>
-                </nav>
-              </div>
-
-              {/* User Menu */}
-              <UserMenu />
-            </div>
+    <div className="relative">
+      {/* Navigation */}
+      <nav className="border-b border-border/50 backdrop-blur-sm">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="font-display text-2xl text-primary-400">⚔️</span>
+            <span className="font-display text-xl">Worldbuilder</span>
           </div>
-        </header>
+          <SignInButton />
+        </div>
+      </nav>
 
-        {/* Main Dashboard Content */}
-        <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to Your Dashboard
+      {/* Hero Section */}
+      <section className="relative overflow-hidden py-20 md:py-32">
+        <div className="container">
+          <div className="mx-auto max-w-4xl text-center">
+            {/* Animated title */}
+            <h1 className="heading-1 mb-6 animate-fade-in">
+              Transform Your D&D Sessions Into
+              <span className="block">Epic Narratives</span>
             </h1>
-            <p className="text-gray-600">
-              Manage your campaigns, upload sessions, and track your D&D adventures.
+            
+            <p className="body-text mb-8 text-lg text-text-secondary animate-slide-up">
+              AI-powered transcription and summarization for tabletop RPG sessions. 
+              Never lose track of your campaign's story again.
             </p>
-          </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            {/* Create Campaign */}
-            <Link 
-              href="/campaigns/new"
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 group"
-            >
-              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-200 transition-colors duration-200">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Create Campaign</h3>
-              <p className="text-sm text-gray-600">Start a new D&D campaign</p>
-            </Link>
-
-            {/* Upload Session */}
-            <Link 
-              href="/sessions/upload"
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 group"
-            >
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors duration-200">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Upload Session</h3>
-              <p className="text-sm text-gray-600">Process new audio recording</p>
-            </Link>
-
-            {/* Browse Sessions */}
-            <Link 
-              href="/sessions"
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 group"
-            >
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors duration-200">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Browse Sessions</h3>
-              <p className="text-sm text-gray-600">View processed summaries</p>
-            </Link>
-
-            {/* Account Settings */}
-            <Link 
-              href="/settings"
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 group"
-            >
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors duration-200">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
-              <p className="text-sm text-gray-600">Manage your account</p>
-            </Link>
-          </div>
-
-          {/* Dashboard Grid */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Recent Campaigns */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold text-gray-900">Recent Campaigns</h2>
-                    <Link 
-                      href="/campaigns"
-                      className="text-indigo-600 hover:text-indigo-700 font-medium text-sm transition-colors duration-200"
-                    >
-                      View All
-                    </Link>
-                  </div>
-                </div>
-                <div className="p-6">
-                  {/* Placeholder for campaigns - will be replaced with actual data */}
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No campaigns yet</h3>
-                    <p className="text-gray-600 mb-4">
-                      Create your first campaign to start processing D&D sessions.
-                    </p>
-                    <Link 
-                      href="/campaigns/new"
-                      className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Create Campaign
-                    </Link>
-                  </div>
-                </div>
-              </div>
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up">
+              <SignInButton />
+              <Button variant="ghost" size="lg" asChild>
+                <Link href="#features">Learn More</Link>
+              </Button>
             </div>
 
-            {/* Recent Activity & Stats */}
-            <div className="space-y-6">
-              {/* Processing Status */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Processing Status</h2>
-                </div>
-                <div className="p-6">
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-gray-600">All systems operational</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Quick Stats</h2>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Campaigns</span>
-                    <span className="font-semibold text-gray-900">0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Sessions Processed</span>
-                    <span className="font-semibold text-gray-900">0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Hours Analyzed</span>
-                    <span className="font-semibold text-gray-900">0</span>
-                  </div>
-                </div>
-              </div>
+            {/* Trust badges */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
+              <Badge variant="outline" className="animate-fade-in">
+                <span className="text-gold mr-1">🎲</span> D&D 5e Compatible
+              </Badge>
+              <Badge variant="outline" className="animate-fade-in animation-delay-100">
+                <span className="text-emerald mr-1">🎙️</span> 4+ Hour Sessions
+              </Badge>
+              <Badge variant="outline" className="animate-fade-in animation-delay-200">
+                <span className="text-azure mr-1">🤖</span> Powered by Gemini 2.0
+              </Badge>
             </div>
           </div>
-        </main>
-      </div>
-    </AuthGuard>
+        </div>
+
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-10 text-6xl opacity-10 animate-pulse">⚔️</div>
+        <div className="absolute bottom-20 right-10 text-6xl opacity-10 animate-pulse animation-delay-500">🛡️</div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 border-t border-border/50">
+        <div className="container">
+          <h2 className="heading-2 text-center mb-12">
+            Everything You Need for Campaign Management
+          </h2>
+
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {/* Feature 1 */}
+            <div className="parchment p-6 hover:scale-105 transition-transform">
+              <div className="text-4xl mb-4">🎙️</div>
+              <h3 className="font-display text-xl text-primary-300 mb-2">
+                Audio Transcription
+              </h3>
+              <p className="body-small">
+                Upload MP3 recordings up to 4 hours. Our AI accurately transcribes 
+                every word, identifying speakers and game events.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="parchment p-6 hover:scale-105 transition-transform">
+              <div className="text-4xl mb-4">📜</div>
+              <h3 className="font-display text-xl text-primary-300 mb-2">
+                AI Summaries
+              </h3>
+              <p className="body-small">
+                Get structured session recaps with key events, NPC encounters, 
+                loot discovered, and narrative highlights.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="parchment p-6 hover:scale-105 transition-transform">
+              <div className="text-4xl mb-4">🏰</div>
+              <h3 className="font-display text-xl text-primary-300 mb-2">
+                Campaign Tracking
+              </h3>
+              <p className="body-small">
+                Organize multiple campaigns, track player characters, and maintain 
+                a comprehensive history of your adventures.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="parchment p-6 hover:scale-105 transition-transform">
+              <div className="text-4xl mb-4">💬</div>
+              <h3 className="font-display text-xl text-primary-300 mb-2">
+                Discord Integration
+              </h3>
+              <p className="body-small">
+                Automatically post session summaries to your Discord server. 
+                Keep your players engaged between sessions.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="parchment p-6 hover:scale-105 transition-transform">
+              <div className="text-4xl mb-4">👥</div>
+              <h3 className="font-display text-xl text-primary-300 mb-2">
+                Multi-DM Support
+              </h3>
+              <p className="body-small">
+                Perfect for West Marches campaigns. Multiple DMs can contribute 
+                to the same living world.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="parchment p-6 hover:scale-105 transition-transform">
+              <div className="text-4xl mb-4">💎</div>
+              <h3 className="font-display text-xl text-primary-300 mb-2">
+                Affordable Pricing
+              </h3>
+              <p className="body-small">
+                Just $2-5 per session. Save hours of note-taking and never 
+                forget important campaign details.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 border-t border-border/50">
+        <div className="container">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="heading-2 mb-6">
+              Ready to Level Up Your Campaign?
+            </h2>
+            <p className="body-text mb-8 text-text-secondary">
+              Join thousands of DMs using AI to enhance their storytelling
+            </p>
+            <SignInButton />
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-8">
+        <div className="container">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <span className="font-display text-primary-400">⚔️</span>
+              <span className="text-sm text-text-secondary">
+                © 2025 Worldbuilder. Roll for initiative.
+              </span>
+            </div>
+            <div className="flex gap-6 text-sm">
+              <Link href="/privacy" className="text-text-secondary hover:text-primary-400 transition-colors">
+                Privacy
+              </Link>
+              <Link href="/terms" className="text-text-secondary hover:text-primary-400 transition-colors">
+                Terms
+              </Link>
+              <Link href="/docs" className="text-text-secondary hover:text-primary-400 transition-colors">
+                Documentation
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   )
 }
