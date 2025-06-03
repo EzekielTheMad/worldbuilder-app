@@ -34,7 +34,7 @@ export function SignInButton() {
     <button
       onClick={handleSignIn}
       disabled={isLoading}
-      className="flex items-center justify-center gap-3 px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors duration-200 min-w-[200px]"
+      className="flex items-center justify-center gap-3 px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] disabled:bg-slate-600 text-white font-semibold rounded-lg transition-colors duration-200 min-w-[200px]"
     >
       {isLoading ? (
         <>
@@ -73,11 +73,11 @@ export function SignOutButton() {
     <button
       onClick={handleSignOut}
       disabled={isLoading}
-      className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 font-medium rounded-md transition-colors duration-200"
+      className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-300 hover:text-white font-medium rounded-md transition-colors duration-200 w-full"
     >
       {isLoading ? (
         <>
-          <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
           <span>Signing out...</span>
         </>
       ) : (
@@ -101,8 +101,8 @@ export function UserMenu() {
   if (status === 'loading') {
     return (
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
-        <div className="w-20 h-4 bg-gray-200 rounded animate-pulse" />
+        <div className="w-8 h-8 bg-slate-700 rounded-full animate-pulse" />
+        <div className="w-20 h-4 bg-slate-700 rounded animate-pulse" />
       </div>
     )
   }
@@ -118,22 +118,22 @@ export function UserMenu() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-700/50 transition-colors duration-200"
       >
         <img
           src={user.image || '/default-avatar.png'}
           alt={`${user.username}'s avatar`}
-          className="w-8 h-8 rounded-full"
+          className="w-8 h-8 rounded-full border-2 border-slate-600"
         />
-        <div className="text-left">
-          <div className="font-medium text-sm text-gray-900">
+        <div className="text-left hidden sm:block">
+          <div className="font-medium text-sm text-white">
             {user.username}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-slate-300">
             {user.email}
           </div>
         </div>
-        <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
@@ -146,26 +146,26 @@ export function UserMenu() {
           />
           
           {/* Menu Content */}
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-            <div className="px-4 py-2 border-b border-gray-100">
-              <div className="font-medium text-sm text-gray-900">
+          <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-2 z-20">
+            <div className="px-4 py-2 border-b border-slate-700">
+              <div className="font-medium text-sm text-white">
                 {user.username}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-slate-300">
                 {user.email}
               </div>
             </div>
             
             <div className="py-1">
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+              <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors duration-200">
                 Account Settings
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+              <button className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors duration-200">
                 Help & Support
               </button>
             </div>
             
-            <div className="border-t border-gray-100 py-1">
+            <div className="border-t border-slate-700 py-1">
               <div className="px-4 py-2">
                 <SignOutButton />
               </div>

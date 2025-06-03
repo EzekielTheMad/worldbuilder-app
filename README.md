@@ -38,7 +38,19 @@ Transform hours of D&D session recordings into polished, structured summaries th
 - **Domain**: worldbuilder.app → Pi routing
 - **Deployment**: Git-based manual deployment
 
-## 🚀 Quick Start
+## 🚨 Current Known Issues
+
+**UI/Styling Problems (High Priority)**
+- Large purple element blocking dashboard view
+- Icons displaying incorrectly sized
+- Dark theme implementation causing layout conflicts
+- Non-responsive design on mobile devices
+
+**Root Cause**: Custom CSS variables conflicting with Tailwind classes
+
+**Workaround**: Focus on functionality; styling refinement in progress
+
+## 🔧 Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -48,35 +60,37 @@ Transform hours of D&D session recordings into polished, structured summaries th
 
 ### Development Setup
 
-1. **Clone the repository**
+1. **Clone and install**
    ```bash
    git clone https://github.com/EzekielTheMad/worldbuilder-app.git
    cd worldbuilder-app
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Environment setup**
+2. **Environment setup**
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your configuration
    ```
 
-4. **Database setup**
+3. **Database setup**
    ```bash
    npx prisma generate
    npx prisma db push
    ```
 
-5. **Run development server**
+4. **Run development server**
    ```bash
    npm run dev
    ```
 
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+   **Note**: UI styling issues are known - functionality works despite visual problems.
+
+### Current Functional Features
+- ✅ Discord OAuth authentication  
+- ✅ Campaign creation and management
+- ✅ Database operations
+- ❌ Clean UI presentation (in progress)
 
 ### Production Deployment (Pi)
 
@@ -141,23 +155,27 @@ See `.env.example` for complete configuration. Key variables:
 
 ## 📈 Development Roadmap
 
-**Phase 1: Foundation (Current)**
+**Phase 1: Foundation ✅ (Completed)**
 - [x] Project setup and documentation
-- [ ] NextAuth.js Discord integration
-- [ ] Database schema with Prisma
-- [ ] Basic UI components
+- [x] NextAuth.js Discord integration  
+- [x] Database schema with Prisma
+- [x] Basic authentication flow
+- [x] Campaign creation system
 
-**Phase 2: Core Features**
-- [ ] Campaign management interface
+**Phase 2: Core Features 🚧 (In Progress)**
+- [x] Campaign management API
+- [x] User dashboard interface
+- [ ] UI/UX refinement (styling issues)
 - [ ] Audio upload component
 - [ ] Processing pipeline integration
 - [ ] Session results display
 
-**Phase 3: Enhancement**
+**Phase 3: Enhancement 📋 (Planned)**
 - [ ] User dashboard and history
 - [ ] Advanced summary customization
 - [ ] Multi-DM campaign support
 - [ ] Performance optimization
+- [ ] Production deployment testing
 
 ## 🤝 Contributing
 
