@@ -22,10 +22,10 @@ export default async function DashboardPage() {
     redirect('/')
   }
 
-  // Fetch user's campaigns
+  // Fetch user's campaigns where they are the owner
   const campaigns = await prisma.campaign.findMany({
     where: {
-      userId: session.user.id,
+      ownerId: session.user.id, // Changed from userId to ownerId
     },
     include: {
       _count: {
@@ -37,9 +37,35 @@ export default async function DashboardPage() {
     }
   })
 
+  // Also fetch campaigns where the user is a member (optional)
+  const memberCampaigns = await prisma.campaign.findMany({
+    where: {
+      members: {
+        some: {
+          userId: session.user.id
+        }
+      }
+    },
+    include: {
+      _count: {
+        select: { sessions: true }
+      }
+    },
+    orderBy: {
+      updatedAt: 'desc'
+    }
+  })
+
+  // Combine owned and member campaigns (removing duplicates)
+  const allCampaigns = [
+    ...campaigns,
+    ...memberCampaigns.filter(mc => !campaigns.find(c => c.id === mc.id))
+  ]
+
   // Calculate stats
-  const totalSessions = campaigns.reduce((acc, campaign) => acc + campaign._count.sessions, 0)
-  const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE').length
+  const totalSessions = allCampaigns.reduce((acc, campaign) => acc + campaign._count.sessions, 0)
+  const ownedCampaigns = campaigns.length
+  const activeCampaigns = allCampaigns.filter(c => c.isPublic).length // Using isPublic as a proxy for active
 
   return (
     <div className="min-h-screen">
@@ -83,22 +109,25 @@ export default async function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           <Card className="border-glow animate-slide-up">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-medium">Total Campaigns</CardTitle>
+              <CardTitle className="text-lg font-medium">Your Campaigns</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-display text-primary-400">
-                {campaigns.length}
+                {ownedCampaigns}
               </div>
+              <p className="text-sm text-text-muted mt-1">
+                {memberCampaigns.length > 0 && `+${memberCampaigns.length} as member`}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="border-glow animate-slide-up animation-delay-100">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-medium">Active Campaigns</CardTitle>
+              <CardTitle className="text-lg font-medium">Total Campaigns</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-display text-emerald">
-                {activeCampaigns}
+                {allCampaigns.length}
               </div>
             </CardContent>
           </Card>
@@ -127,7 +156,7 @@ export default async function DashboardPage() {
             </Button>
           </div>
 
-          {campaigns.length === 0 ? (
+          {allCampaigns.length === 0 ? (
             <Alert className="animate-fade-in">
               <AlertDescription>
                 <div className="text-center py-8">
@@ -144,7 +173,7 @@ export default async function DashboardPage() {
             </Alert>
           ) : (
             <div className="campaign-grid">
-              {campaigns.map((campaign, index) => (
+              {allCampaigns.map((campaign, index) => (
                 <div 
                   key={campaign.id} 
                   className="animate-slide-up"
@@ -155,12 +184,13 @@ export default async function DashboardPage() {
                       id: campaign.id,
                       name: campaign.name,
                       description: campaign.description || '',
-                      status: campaign.status.toLowerCase() as 'active' | 'paused' | 'completed',
-                      playerCount: 0, // You'll need to add this to your schema
+                      status: campaign.isPublic ? 'active' : 'private', // Adapting to your schema
+                      playerCount: Object.keys(campaign.playerCharacterMapping as object || {}).length,
                       sessionCount: campaign._count.sessions,
-                      setting: campaign.setting,
+                      setting: campaign.worldPrimer?.slice(0, 50) || 'Custom Setting',
                       createdAt: campaign.createdAt,
                       updatedAt: campaign.updatedAt,
+                      isOwner: campaign.ownerId === session.user.id,
                     }}
                   />
                 </div>

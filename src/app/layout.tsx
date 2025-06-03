@@ -11,20 +11,20 @@ import '@/styles/globals.css'
 const inter = Inter({ 
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-body'
+  variable: '--font-inter'  // Changed to match CSS variable format
 })
 
 const cinzel = Cinzel({ 
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-display',
+  variable: '--font-cinzel',  // Changed to match CSS variable format
   weight: ['400', '500', '600', '700']
 })
 
 const firaCode = Fira_Code({ 
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-mono',
+  variable: '--font-fira-code',  // Changed to match CSS variable format
   weight: ['400', '500']
 })
 

@@ -1,12 +1,5 @@
-/**
- * Global styles for Worldbuilder App
- * Imports all design system modules and sets base styles
- */
-
-/* Import Tailwind base styles */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import Tailwind v4 */
+@import "tailwindcss";
 
 /* Import design system */
 @import './design-system/tokens.css';
