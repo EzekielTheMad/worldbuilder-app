@@ -61,28 +61,43 @@ model VerificationToken {
 model User {
   // NextAuth.js required fields
   id            String    @id @default(cuid())
-  name          String?   // Not used - we use username instead
-  email         String?   @unique
+  name          String?   // Not used - we use displayName instead
+  email         String?   @unique // OAuth email
   emailVerified DateTime?
   image         String?
 
   // Worldbuilder-specific fields
-  discordId String  @unique
-  username  String
-  createdAt DateTime @default(now())
-  lastLogin DateTime @default(now())
+  discordId    String   @unique
+  username     String   // Discord username
+  displayName  String?  // User's preferred display name override
+  createdAt    DateTime @default(now())
+  lastLogin    DateTime @default(now())
 
-  // User settings and preferences
-  settings Json @default("{\"emailNotifications\": true, \"discordNotifications\": true}")
+  // Account Settings - Contact Information
+  contactEmail         String  @default("") // Email for platform notifications (defaults to OAuth email)
+  contactEmailVerified Boolean @default(false) // Whether contactEmail is verified
+  
+  // Notification Preferences
+  emailNotifications      Boolean @default(true)  // Master email toggle
+  discordNotifications    Boolean @default(true)  // Discord notifications
+  marketingEmails         Boolean @default(true)  // Marketing and promotional emails
+  platformAnnouncements   Boolean @default(true)  // Platform updates and feature announcements
+  
+  // Session Processing Notifications (granular control)
+  notifySessionComplete   Boolean @default(true)  // Session processing finished
+  notifySessionFailed     Boolean @default(true)  // Session processing failed
+  
+  // Future extensibility
+  advancedSettings Json @default("{}")
 
   // NextAuth.js relationships
   accounts Account[]
   sessions Session[]
 
   // Worldbuilder relationships
-  ownedCampaigns    Campaign[] @relation("CampaignOwner")
+  ownedCampaigns      Campaign[] @relation("CampaignOwner")
   campaignMemberships CampaignMember[]
-  uploadedSessions  GameSession[] @relation("SessionUploader")
+  uploadedSessions    GameSession[] @relation("SessionUploader")
 
   @@map("users")
 }
