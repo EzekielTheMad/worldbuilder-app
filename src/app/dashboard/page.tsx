@@ -26,9 +26,19 @@ export default async function DashboardPage() {
   // Fetch user's campaigns where they are the owner
   const campaigns = await prisma.campaign.findMany({
     where: {
-      ownerId: session.user.id, // Changed from userId to ownerId
+      ownerId: session.user.id,
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      headerImagePath: true, // Include header image path
+      isPublic: true,
+      worldPrimer: true,
+      playerCharacterMapping: true,
+      createdAt: true,
+      updatedAt: true,
+      ownerId: true,
       _count: {
         select: { sessions: true }
       }
@@ -47,7 +57,17 @@ export default async function DashboardPage() {
         }
       }
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      headerImagePath: true, // Include header image path
+      isPublic: true,
+      worldPrimer: true,
+      playerCharacterMapping: true,
+      createdAt: true,
+      updatedAt: true,
+      ownerId: true,
       _count: {
         select: { sessions: true }
       }
@@ -185,7 +205,8 @@ export default async function DashboardPage() {
                       id: campaign.id,
                       name: campaign.name,
                       description: campaign.description || '',
-                      status: campaign.isPublic ? 'active' : 'private', // Adapting to your schema
+                      headerImagePath: campaign.headerImagePath, // Pass header image path
+                      status: campaign.isPublic ? 'active' : 'private',
                       playerCount: Object.keys(campaign.playerCharacterMapping as object || {}).length,
                       sessionCount: campaign._count.sessions,
                       setting: campaign.worldPrimer?.slice(0, 50) || 'Custom Setting',

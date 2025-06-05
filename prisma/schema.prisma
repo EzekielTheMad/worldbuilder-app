@@ -93,6 +93,8 @@ model Campaign {
   description            String?  @db.Text
   worldPrimer            String   @db.Text
   settingNotes           String?  @db.Text
+  headerImagePath        String?  // 🆕 Add this line
+
   
   // Player-Character mapping stored as JSON
   // Format: { "playerName": "characterName" }

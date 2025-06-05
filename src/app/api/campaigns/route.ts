@@ -1,11 +1,3 @@
-/**
- * Campaigns API Routes
- * 
- * Handles CRUD operations for campaigns including:
- * - GET /api/campaigns - List user's campaigns
- * - POST /api/campaigns - Create new campaign
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
@@ -13,235 +5,65 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 /**
- * Validation schema for campaign creation
+ * Validation schema for campaign updates
+ * All fields are optional for partial updates
  */
-const createCampaignSchema = z.object({
-  name: z.string().min(1, 'Campaign name is required').max(100, 'Campaign name too long'),
-  description: z.string().max(500, 'Description too long').optional().nullable(),
-  worldPrimer: z.string().max(5000, 'World primer too long').optional(),
-  settingNotes: z.string().max(2000, 'Setting notes too long').optional().nullable(),
-  playerCharacterMapping: z.record(z.string(), z.string()).optional(),
-  isPublic: z.boolean().optional(),
+const updateCampaignSchema = z.object({
+  name: z.string()
+    .min(1, 'Campaign name is required')
+    .max(100, 'Campaign name must be less than 100 characters')
+    .trim()
+    .optional(),
+  description: z.string()
+    .max(1000, 'Description must be less than 1000 characters')
+    .trim()
+    .optional()
+    .nullable(),
+  worldPrimer: z.string()
+    .max(10000, 'World primer must be less than 10000 characters')
+    .trim()
+    .optional(),
+  settingNotes: z.string()
+    .max(2000, 'Setting notes must be less than 2000 characters')
+    .trim()
+    .optional()
+    .nullable(),
+  playerCharacterMapping: z.record(z.string())
+    .optional()
+    .nullable(),
 })
 
 /**
- * GET /api/campaigns
- * Retrieve all campaigns for the authenticated user
+ * GET /api/campaigns/[id]
+ * Fetch a single campaign with full details
  */
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } },
+        { error: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    // Parse query parameters
-    const { searchParams } = new URL(request.url)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
-    const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0)
-    const role = searchParams.get('role') // 'owner', 'dm', 'player'
-
-    // Build where clause based on role filter
-    let whereClause: any = {
-      OR: [
-        { ownerId: session.user.id }, // Campaigns owned by user
-        { 
-          members: {
-            some: {
-              userId: session.user.id,
-              role: { in: ['DM'] } // User is a DM
-            }
-          }
-        }
-      ]
-    }
-
-    // Apply role filter if specified
-    if (role === 'owner') {
-      whereClause = { ownerId: session.user.id }
-    } else if (role === 'dm') {
-      whereClause = {
-        members: {
-          some: {
-            userId: session.user.id,
-            role: 'DM'
-          }
-        }
-      }
-    } else if (role === 'player') {
-      whereClause = {
-        members: {
-          some: {
-            userId: session.user.id,
-            role: 'PLAYER'
-          }
-        }
-      }
-    }
-
-    // Fetch campaigns with related data
-    const [campaigns, total] = await Promise.all([
-      prisma.campaign.findMany({
-        where: whereClause,
-        include: {
-          owner: {
-            select: {
-              id: true,
-              username: true,
-              image: true,
-            }
-          },
-          members: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  image: true,
-                }
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        id: params.id,
+        OR: [
+          { ownerId: session.user.id },
+          { 
+            members: {
+              some: {
+                userId: session.user.id
               }
             }
-          },
-          sessions: {
-            select: {
-              id: true,
-              createdAt: true,
-              status: true,
-            },
-            orderBy: {
-              createdAt: 'desc'
-            },
-            take: 1 // Just the latest session for preview
-          },
-          _count: {
-            select: {
-              sessions: true,
-              members: true,
-            }
           }
-        },
-        orderBy: {
-          updatedAt: 'desc'
-        },
-        take: limit,
-        skip: offset,
-      }),
-      
-      prisma.campaign.count({
-        where: whereClause,
-      })
-    ])
-
-    // Transform campaigns for response
-    const transformedCampaigns = campaigns.map(campaign => ({
-      id: campaign.id,
-      name: campaign.name,
-      description: campaign.description,
-      worldPrimer: campaign.worldPrimer,
-      settingNotes: campaign.settingNotes,
-      playerCharacterMapping: campaign.playerCharacterMapping,
-      isPublic: campaign.isPublic,
-      inviteCode: campaign.inviteCode,
-      createdAt: campaign.createdAt.toISOString(),
-      updatedAt: campaign.updatedAt.toISOString(),
-      owner: campaign.owner,
-      memberCount: campaign._count.members,
-      sessionCount: campaign._count.sessions,
-      lastSessionAt: campaign.sessions[0]?.createdAt?.toISOString() || null,
-      // User's role in this campaign
-      userRole: campaign.ownerId === session.user.id 
-        ? 'OWNER' 
-        : campaign.members.find(m => m.userId === session.user.id)?.role || 'MEMBER'
-    }))
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        campaigns: transformedCampaigns,
-        total,
-        hasMore: offset + campaigns.length < total,
-      }
-    })
-
-  } catch (error) {
-    console.error('Error fetching campaigns:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Failed to fetch campaigns' 
-        } 
-      },
-      { status: 500 }
-    )
-  }
-}
-
-/**
- * POST /api/campaigns
- * Create a new campaign
- */
-export async function POST(request: NextRequest) {
-  try {
-    // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
-
-    // Parse and validate request body
-    const body = await request.json()
-    const validationResult = createCampaignSchema.safeParse(body)
-    
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: { 
-            code: 'VALIDATION_ERROR', 
-            message: 'Invalid campaign data',
-            details: validationResult.error.errors
-          } 
-        },
-        { status: 400 }
-      )
-    }
-
-    const {
-      name,
-      description,
-      worldPrimer,
-      settingNotes,
-      playerCharacterMapping,
-      isPublic = false
-    } = validationResult.data
-
-    // Create campaign in database
-    const campaign = await prisma.campaign.create({
-      data: {
-        name,
-        description,
-        worldPrimer: worldPrimer || '',
-        settingNotes,
-        playerCharacterMapping: playerCharacterMapping || {},
-        isPublic,
-        ownerId: session.user.id,
-        // Create campaign membership for owner
-        members: {
-          create: {
-            userId: session.user.id,
-            role: 'OWNER',
-            characterName: null, // Owner doesn't need a character mapping by default
-          }
-        }
+        ]
       },
       include: {
         owner: {
@@ -249,6 +71,20 @@ export async function POST(request: NextRequest) {
             id: true,
             username: true,
             image: true,
+          }
+        },
+        sessions: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 10,
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            status: true,
+            summaryJson: true,
+            notes: true,
           }
         },
         members: {
@@ -271,60 +107,221 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Transform campaign for response
-    const transformedCampaign = {
-      id: campaign.id,
-      name: campaign.name,
-      description: campaign.description,
-      worldPrimer: campaign.worldPrimer,
-      settingNotes: campaign.settingNotes,
-      playerCharacterMapping: campaign.playerCharacterMapping,
-      isPublic: campaign.isPublic,
-      inviteCode: campaign.inviteCode,
-      createdAt: campaign.createdAt.toISOString(),
-      updatedAt: campaign.updatedAt.toISOString(),
-      owner: campaign.owner,
-      memberCount: campaign._count.members,
-      sessionCount: campaign._count.sessions,
-      lastSessionAt: null,
-      userRole: 'OWNER'
+    if (!campaign) {
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 }
+      )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        campaign: transformedCampaign,
-        inviteCode: campaign.inviteCode
-      }
-    }, { status: 201 })
+    return NextResponse.json(campaign)
 
   } catch (error) {
-    console.error('Error creating campaign:', error)
+    console.error('Error fetching campaign:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH /api/campaigns/[id]
+ * Update campaign details with auto-save functionality
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
     
-    // Handle specific database errors
-    if (error instanceof Error) {
-      if (error.message.includes('Unique constraint')) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: { 
-              code: 'DUPLICATE_ERROR', 
-              message: 'A campaign with this name already exists' 
-            } 
-          },
-          { status: 409 }
-        )
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Parse and validate request body
+    const body = await request.json()
+    const validatedData = updateCampaignSchema.parse(body)
+
+    // Check if user owns the campaign
+    const existingCampaign = await prisma.campaign.findFirst({
+      where: {
+        id: params.id,
+        ownerId: session.user.id, // Only owner can edit
       }
+    })
+
+    if (!existingCampaign) {
+      return NextResponse.json(
+        { error: 'Campaign not found or you do not have permission to edit it' },
+        { status: 404 }
+      )
+    }
+
+    // Prepare update data, filtering out undefined values
+    const updateData: any = {
+      updatedAt: new Date(),
+    }
+
+    if (validatedData.name !== undefined) {
+      updateData.name = validatedData.name
+    }
+
+    if (validatedData.description !== undefined) {
+      updateData.description = validatedData.description || null
+    }
+
+    if (validatedData.worldPrimer !== undefined) {
+      updateData.worldPrimer = validatedData.worldPrimer
+    }
+
+    if (validatedData.settingNotes !== undefined) {
+      updateData.settingNotes = validatedData.settingNotes || null
+    }
+
+    if (validatedData.playerCharacterMapping !== undefined) {
+      updateData.playerCharacterMapping = validatedData.playerCharacterMapping || {}
+    }
+
+    // Update the campaign
+    const updatedCampaign = await prisma.campaign.update({
+      where: {
+        id: params.id,
+      },
+      data: updateData,
+      include: {
+        owner: {
+          select: {
+            id: true,
+            username: true,
+            image: true,
+          }
+        },
+        sessions: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 10,
+          select: {
+            id: true,
+            sessionNumber: true,
+            sessionDate: true,
+            createdAt: true,
+            status: true,
+            summary: true,
+          }
+        },
+        _count: {
+          select: {
+            sessions: true,
+            members: true,
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(updatedCampaign)
+
+  } catch (error) {
+    console.error('Error updating campaign:', error)
+
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      )
+    }
+
+    // Handle Prisma errors
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A campaign with this name already exists' },
+        { status: 409 }
+      )
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Failed to create campaign' 
-        } 
+      { error: 'Failed to update campaign' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE /api/campaigns/[id]
+ * Delete a campaign (owner only)
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Check if user owns the campaign
+    const existingCampaign = await prisma.campaign.findFirst({
+      where: {
+        id: params.id,
+        ownerId: session.user.id,
       },
+      include: {
+        _count: {
+          select: {
+            sessions: true,
+          }
+        }
+      }
+    })
+
+    if (!existingCampaign) {
+      return NextResponse.json(
+        { error: 'Campaign not found or you do not have permission to delete it' },
+        { status: 404 }
+      )
+    }
+
+    // Optional: Prevent deletion if campaign has sessions
+    // Uncomment if you want to protect campaigns with data
+    /*
+    if (existingCampaign._count.sessions > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete campaign with existing sessions' },
+        { status: 400 }
+      )
+    }
+    */
+
+    // Delete the campaign (cascade will handle related records)
+    await prisma.campaign.delete({
+      where: {
+        id: params.id,
+      }
+    })
+
+    return NextResponse.json({ success: true })
+
+  } catch (error) {
+    console.error('Error deleting campaign:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete campaign' },
       { status: 500 }
     )
   }
