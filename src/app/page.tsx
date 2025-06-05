@@ -5,7 +5,6 @@ import { authOptions } from '@/lib/auth'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { SignInButton } from '@/components/auth/SignInButton'
-import '@/src/styles/globals.css'  // or the correct path to your CSS
 
 
 /**

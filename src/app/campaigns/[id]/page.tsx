@@ -24,17 +24,40 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
     notFound()
   }
 
+  // Fixed query - using ownerId and checking membership
   const campaign = await prisma.campaign.findFirst({
     where: {
       id: params.id,
-      userId: session.user.id,
+      OR: [
+        { ownerId: session.user.id },
+        { 
+          members: {
+            some: {
+              userId: session.user.id
+            }
+          }
+        }
+      ]
     },
     include: {
+      owner: {
+        select: {
+          id: true,
+          username: true,
+          image: true,
+        }
+      },
       sessions: {
         orderBy: {
           createdAt: 'desc'
         },
         take: 10
+      },
+      _count: {
+        select: {
+          sessions: true,
+          members: true,
+        }
       }
     }
   })
@@ -42,6 +65,13 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
   if (!campaign) {
     notFound()
   }
+
+  // Determine if user is owner
+  const isOwner = campaign.ownerId === session.user.id
+
+  // Get player count from playerCharacterMapping
+  const playerCharacterMapping = campaign.playerCharacterMapping as Record<string, string> || {}
+  const playerCount = Object.keys(playerCharacterMapping).length
 
   return (
     <div className="min-h-screen">
@@ -85,20 +115,16 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
               )}
             </div>
             <Badge 
-              variant={
-                campaign.status === 'ACTIVE' ? 'success' : 
-                campaign.status === 'PAUSED' ? 'warning' : 
-                'default'
-              }
+              variant={campaign.isPublic ? 'success' : 'default'}
             >
-              {campaign.status.toLowerCase()}
+              {campaign.isPublic ? 'public' : 'private'}
             </Badge>
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-text-muted">Setting:</span>
-              <span className="stat-text">{campaign.setting.replace('_', ' ')}</span>
+              <span className="text-text-muted">Players:</span>
+              <span className="stat-text">{playerCount} players</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-text-muted">Created:</span>
@@ -108,9 +134,31 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-text-muted">Sessions:</span>
-              <span className="text-gold font-mono">{campaign.sessions.length}</span>
+              <span className="text-gold font-mono">{campaign._count.sessions}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-text-muted">Owner:</span>
+              <span className="text-text-secondary">
+                {campaign.owner.username || 'Unknown'}
+              </span>
             </div>
           </div>
+
+          {/* Player/Character List */}
+          {playerCount > 0 && (
+            <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
+              <h3 className="font-medium mb-2">Players & Characters</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {Object.entries(playerCharacterMapping).map(([player, character]) => (
+                  <div key={player} className="text-sm">
+                    <span className="text-text-secondary">{player}</span>
+                    <span className="text-text-muted"> → </span>
+                    <span className="text-primary-400">{character}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Recent Sessions */}
@@ -182,25 +230,32 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
         </section>
 
         {/* Campaign Actions */}
-        <section className="mt-12">
-          <h2 className="heading-2 mb-6">Campaign Actions</h2>
-          <div className="flex flex-wrap gap-4">
-            <Button variant="secondary" asChild>
-              <Link href={`/campaigns/${campaign.id}/edit`}>
-                ⚙️ Edit Campaign
-              </Link>
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link href={`/campaigns/${campaign.id}/players`}>
-                👥 Manage Players
-              </Link>
-            </Button>
-            <Button variant="secondary" disabled>
-              💬 Discord Settings
-              <Badge variant="warning" className="ml-2">Soon</Badge>
-            </Button>
-          </div>
-        </section>
+        {isOwner && (
+          <section className="mt-12">
+            <h2 className="heading-2 mb-6">Campaign Actions</h2>
+            <div className="flex flex-wrap gap-4">
+              <Button variant="secondary" asChild>
+                <Link href={`/campaigns/${campaign.id}/edit`}>
+                  ⚙️ Edit Campaign
+                </Link>
+              </Button>
+              <Button variant="secondary" asChild>
+                <Link href={`/campaigns/${campaign.id}/players`}>
+                  👥 Manage Players
+                </Link>
+              </Button>
+              <Button variant="secondary" disabled>
+                💬 Discord Settings
+                <Badge variant="warning" className="ml-2">Soon</Badge>
+              </Button>
+              {campaign.inviteCode && (
+                <Button variant="secondary">
+                  📋 Invite Code: {campaign.inviteCode}
+                </Button>
+              )}
+            </div>
+          </section>
+        )}
       </section>
     </div>
   )

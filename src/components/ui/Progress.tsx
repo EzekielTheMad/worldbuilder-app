@@ -1,46 +1,63 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+/**
+ * Progress Component
+ * Path: src/components/ui/Progress.tsx
+ * 
+ * Progress bar component for showing completion status
+ */
 
-interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
-  /**
-   * Progress value (0-100)
-   */
-  value?: number
-  /**
-   * Whether to show the glow effect
-   * @default true
-   */
-  showGlow?: boolean
+import React from 'react'
+import { cn } from '@/lib/utils'
+
+interface ProgressProps {
+  value: number // 0-100
+  className?: string
+  showLabel?: boolean
+  variant?: 'default' | 'success' | 'warning' | 'danger'
 }
 
-/**
- * Progress bar component
- * Shows upload or processing progress with optional glow
- */
-const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
-  ({ className, value = 0, showGlow = true, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "relative h-4 w-full overflow-hidden rounded-full bg-surface-elevated",
-          className
-        )}
-        {...props}
-      >
+export function Progress({ 
+  value, 
+  className,
+  showLabel = false,
+  variant = 'default'
+}: ProgressProps) {
+  // Ensure value is between 0 and 100
+  const normalizedValue = Math.max(0, Math.min(100, value))
+
+  const variantClasses = {
+    default: 'bg-primary-500',
+    success: 'bg-emerald',
+    warning: 'bg-gold',
+    danger: 'bg-crimson',
+  }
+
+  return (
+    <div className={cn('relative', className)}>
+      {/* Background track */}
+      <div className="w-full h-2 bg-surface-elevated rounded-full overflow-hidden">
+        {/* Progress fill */}
         <div
           className={cn(
-            "h-full bg-gradient-to-r from-primary-600 to-primary-400 transition-all duration-300",
-            showGlow && "shadow-glow"
+            'h-full transition-all duration-300 ease-out',
+            variantClasses[variant]
           )}
-          style={{
-            width: `${Math.min(100, Math.max(0, value))}%`,
-          }}
-        />
+          style={{ width: `${normalizedValue}%` }}
+        >
+          {/* Animated shimmer effect */}
+          <div className="h-full w-full relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+          </div>
+        </div>
       </div>
-    )
-  }
-)
-Progress.displayName = "Progress"
-
-export { Progress }
+      
+      {/* Optional label */}
+      {showLabel && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-medium text-text-primary">
+            {normalizedValue}%
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
